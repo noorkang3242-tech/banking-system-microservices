@@ -1,0 +1,65 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+        - id: customer-service
+          uri: lb://CUSTOMER-SERVICE
+          predicates:
+            - Path=/api/customers/**
+
+        - id: account-service
+          uri: lb://ACCOUNT-SERVICE
+          predicates:
+            - Path=/api/accounts/**
+
+        - id: transaction-service
+          uri: lb://TRANSACTION-SERVICE
+          predicates:
+            - Path=/api/transactions/**
+
+        # ---- Routes for services added in later phases ----
+        # Uncomment each route once that service exists and is registered in Eureka.
+        - id: transfer-service
+          uri: lb://TRANSFER-SERVICE
+          predicates:
+            - Path=/api/transfers/**
+        - id: loan-service
+          uri: lb://LOAN-SERVICE
+          predicates:
+            - Path=/api/loans/**
+        - id: card-service
+          uri: lb://CARD-SERVICE
+          predicates:
+            - Path=/api/cards/**
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+
+# MUST be identical to the secret in auth-service.
+jwt:
+  secret: ${JWT_SECRET:ChangeThisSecretToA64CharacterLongRandomStringForProductionUse12345}
+
+# Stamped on every forwarded request so downstream services can verify the call
+# came through the gateway. MUST be identical to internal.shared-secret in every service.
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:local-dev-internal-secret-change-me}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

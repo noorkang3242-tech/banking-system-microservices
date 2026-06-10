@@ -1,0 +1,26 @@
+# For now this only runs MySQL, so you can test the services without
+# installing MySQL on your machine. Full service containers are added
+# in the Docker phase.
+#
+#   Start:  docker compose up -d
+#   Stop:   docker compose down
+#   Wipe:   docker compose down -v   (also deletes the database data)
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: banking-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:

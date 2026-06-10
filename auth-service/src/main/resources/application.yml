@@ -1,0 +1,57 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      # 'update' lets Hibernate create/update tables automatically — simplest for first run.
+      # Production migrations (Flyway) are introduced in the dedicated migration phase.
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# jwt.secret MUST be identical to the secret configured in api-gateway.
+jwt:
+  secret: ${JWT_SECRET:ChangeThisSecretToA64CharacterLongRandomStringForProductionUse12345}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24 hours
+
+# Shared secret the gateway stamps on every forwarded request; this service rejects
+# any direct call that does not carry it. MUST match the gateway + all services.
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:local-dev-internal-secret-change-me}
+
+# Single ADMIN seeded at startup (the only way staff are created now that
+# /register is CUSTOMER-only). Leave unset to skip seeding.
+admin:
+  seed:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{requestId:-}]"

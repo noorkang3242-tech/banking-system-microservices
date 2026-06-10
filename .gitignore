@@ -1,0 +1,24 @@
+# Build output (jars are ~700 MB - never commit)
+target/
+build/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Logs / OS
+*.log
+.DS_Store
+
+# Local env / secrets (NEVER commit real secrets)
+*.env
+.env
+secrets.ps1
+*.local.ps1
