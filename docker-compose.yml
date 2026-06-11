@@ -112,10 +112,10 @@ services:
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?set INTERNAL_SHARED_SECRET in .env}
       FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost:*}
 
-  # React app served by nginx (built from the sibling banking-frontend folder)
+  # React app served by nginx (built from the ./frontend folder in this repo)
   frontend:
     build:
-      context: ../banking-frontend
+      context: ./frontend
       args:
         VITE_API_BASE_URL: ${PUBLIC_URL:-}
     restart: unless-stopped
