@@ -78,8 +78,8 @@ while ($s.txnTotal -lt $TargetTxn) {
         if ($r.ok) { $s.deposits++; $s.txnTotal++ } else { $s.errors++ }
     }
     if (Dead $r) { Write-Host "`nSystem distress (lagataar fail) - volume loop ruk raha hai." -ForegroundColor Yellow; break }
-    if ($s.txnTotal % 100 -eq 0) { Write-Host ("  ... {0}/{1} transactions" -f $s.txnTotal, $TargetTxn) -ForegroundColor DarkGray }
-    Start-Sleep -Milliseconds 25
+    if ($s.txnTotal % 250 -eq 0) { Write-Host ("  ... {0}/{1} transactions" -f $s.txnTotal, $TargetTxn) -ForegroundColor DarkGray }
+    Start-Sleep -Milliseconds 4
 }
 
 # ---------- 3) TRANSFERS (each = 2 txns: out+in) ----------

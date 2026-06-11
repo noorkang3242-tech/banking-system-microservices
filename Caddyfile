@@ -1,0 +1,16 @@
+# One front door for the whole app. Caddy gets HTTPS automatically when
+# DOMAIN is a real hostname pointing at this server; with DOMAIN=:80 it
+# just serves plain HTTP (handy for a first test by IP).
+{$DOMAIN} {
+	encode gzip
+
+	# API calls go to the gateway
+	handle /api/* {
+		reverse_proxy api-gateway:8090
+	}
+
+	# everything else is the React app (single-page, nginx handles routing)
+	handle {
+		reverse_proxy frontend:80
+	}
+}

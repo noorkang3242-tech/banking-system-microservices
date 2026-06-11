@@ -1,26 +1,147 @@
-# For now this only runs MySQL, so you can test the services without
-# installing MySQL on your machine. Full service containers are added
-# in the Docker phase.
-#
-#   Start:  docker compose up -d
-#   Stop:   docker compose down
-#   Wipe:   docker compose down -v   (also deletes the database data)
+# =====================================================================
+#  NOOR Bank - full stack on one server.
+#  Run:  docker compose up -d --build
+#  Needs a server with >= 4 GB RAM (Oracle Cloud Free ARM = 24 GB, ideal).
+#  Copy .env.example to .env and fill in real secrets + your DOMAIN first.
+# =====================================================================
+
+x-common-env: &common-env
+  DB_USERNAME: ${DB_USERNAME:-root}
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+  EUREKA_URL: http://discovery:8761/eureka/
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+  INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?set INTERNAL_SHARED_SECRET in .env}
+
+x-svc: &svc
+  restart: unless-stopped
+  networks: [bank]
+  depends_on:
+    mysql:
+      condition: service_healthy
+    discovery:
+      condition: service_started
 
 services:
   mysql:
     image: mysql:8.0
-    container_name: banking-mysql
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+    networks: [bank]
+
+  discovery:
+    build: { context: ./discovery-server, dockerfile: ../Dockerfile }
+    restart: unless-stopped
+    networks: [bank]
+
+  auth-service:
+    <<: *svc
+    build: { context: ./auth-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@bank.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
+
+  customer-service:
+    <<: *svc
+    build: { context: ./customer-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/user_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  account-service:
+    <<: *svc
+    build: { context: ./account-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/account_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  transaction-service:
+    <<: *svc
+    build: { context: ./transaction-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/transaction_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  transfer-service:
+    <<: *svc
+    build: { context: ./transfer-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/transfer_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  loan-service:
+    <<: *svc
+    build: { context: ./loan-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/loan_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  card-service:
+    <<: *svc
+    build: { context: ./card-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/card_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  notification-service:
+    <<: *svc
+    build: { context: ./notification-service, dockerfile: ../Dockerfile }
+    environment:
+      <<: *common-env
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+
+  api-gateway:
+    <<: *svc
+    build: { context: ./api-gateway, dockerfile: ../Dockerfile }
+    environment:
+      SERVER_PORT: "8090"
+      EUREKA_URL: http://discovery:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?set INTERNAL_SHARED_SECRET in .env}
+      FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost:*}
+
+  # React app served by nginx (built from the sibling banking-frontend folder)
+  frontend:
+    build:
+      context: ../banking-frontend
+      args:
+        VITE_API_BASE_URL: ${PUBLIC_URL:-}
+    restart: unless-stopped
+    networks: [bank]
+
+  # one front door: /api/* -> gateway, everything else -> the React app.
+  # Set DOMAIN in .env to a real domain and Caddy gets HTTPS automatically.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api-gateway, frontend]
+    networks: [bank]
+
+networks:
+  bank:
 
 volumes:
   mysql_data:
+  caddy_data:
+  caddy_config:

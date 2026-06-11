@@ -6,6 +6,17 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      # CORS so the browser frontend (Vite dev server, etc.) can call the gateway.
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "${FRONTEND_ORIGIN:http://localhost:*}"
+              - "http://localhost:*"
+            allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
       routes:
         - id: auth-service
           uri: lb://AUTH-SERVICE

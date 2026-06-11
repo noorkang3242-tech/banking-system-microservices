@@ -1,7 +1,10 @@
 package com.bank.account.service;
 
+import com.bank.account.client.CustomerClient;
+import com.bank.account.client.CustomerInfo;
 import com.bank.account.client.TransactionClient;
 import com.bank.account.dto.AccountResponse;
+import com.bank.account.dto.BeneficiaryResponse;
 import com.bank.account.dto.OpenAccountRequest;
 import com.bank.account.entity.Account;
 import com.bank.account.entity.AccountStatus;
@@ -23,8 +26,31 @@ public class AccountService {
 
     private final AccountRepository repository;
     private final TransactionClient transactionClient;
+    private final CustomerClient customerClient;
 
     private static final Set<String> STAFF_ROLES = Set.of("MANAGER", "ADMIN");
+
+    /**
+     * Limited beneficiary view for the transfer screen: any logged-in user can look
+     * up an account number to confirm the holder's name before sending money.
+     * Returns no balance — only name + type + status.
+     */
+    public BeneficiaryResponse getBeneficiary(String accountNumber) {
+        Account account = findOrThrow(accountNumber);
+        String holderName = null;
+        CustomerInfo c = customerClient.getByUserId(account.getUserId());
+        if (c != null) {
+            String fn = c.firstName() == null ? "" : c.firstName();
+            String ln = c.lastName() == null ? "" : c.lastName();
+            holderName = (fn + " " + ln).trim();
+            if (holderName.isBlank()) holderName = c.email();
+        }
+        return new BeneficiaryResponse(
+                account.getAccountNumber(),
+                account.getAccountType().name(),
+                account.getStatus().name(),
+                holderName);
+    }
 
     public AccountResponse openAccount(String userId, OpenAccountRequest request) {
         BigDecimal opening = request.initialDeposit() != null ? request.initialDeposit() : BigDecimal.ZERO;
@@ -55,6 +81,23 @@ public class AccountService {
 
     public List<AccountResponse> getAll() {
         return repository.findAll().stream().map(AccountResponse::from).toList();
+    }
+
+    /** Staff-only: block (FROZEN) or unblock (ACTIVE) an account. A FROZEN account cannot deposit/withdraw. */
+    @Transactional
+    public AccountResponse setStatus(String accountNumber, String status, String role) {
+        if (role == null || !STAFF_ROLES.contains(role.toUpperCase())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Requires MANAGER or ADMIN role");
+        }
+        AccountStatus newStatus;
+        try {
+            newStatus = AccountStatus.valueOf(status.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Invalid status (use ACTIVE, FROZEN or CLOSED)");
+        }
+        Account account = findOrThrow(accountNumber);
+        account.setStatus(newStatus);
+        return AccountResponse.from(repository.save(account));
     }
 
     @Transactional

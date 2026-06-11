@@ -2,7 +2,9 @@ package com.bank.account.controller;
 
 import com.bank.account.dto.AccountResponse;
 import com.bank.account.dto.AmountRequest;
+import com.bank.account.dto.BeneficiaryResponse;
 import com.bank.account.dto.OpenAccountRequest;
+import com.bank.account.dto.StatusRequest;
 import com.bank.account.exception.ApiException;
 import com.bank.account.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -53,6 +55,14 @@ public class AccountController {
         return ResponseEntity.ok(accountService.getOne(accountNumber, userId, role));
     }
 
+    @GetMapping("/{accountNumber}/beneficiary")
+    @Operation(summary = "Verify a beneficiary before transfer (name + type + status, no balance)")
+    public ResponseEntity<BeneficiaryResponse> beneficiary(
+            @RequestHeader("X-User-Id") String userId,
+            @PathVariable String accountNumber) {
+        return ResponseEntity.ok(accountService.getBeneficiary(accountNumber));
+    }
+
     @PostMapping("/{accountNumber}/deposit")
     @Operation(summary = "Deposit money into an account")
     public ResponseEntity<AccountResponse> deposit(
@@ -81,5 +91,14 @@ public class AccountController {
             throw new ApiException(HttpStatus.FORBIDDEN, "Requires MANAGER or ADMIN role");
         }
         return ResponseEntity.ok(accountService.getAll());
+    }
+
+    @PatchMapping("/{accountNumber}/status")
+    @Operation(summary = "Block (FROZEN) or unblock (ACTIVE) an account (staff only)")
+    public ResponseEntity<AccountResponse> setStatus(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable String accountNumber,
+            @Valid @RequestBody StatusRequest request) {
+        return ResponseEntity.ok(accountService.setStatus(accountNumber, request.status(), role));
     }
 }
