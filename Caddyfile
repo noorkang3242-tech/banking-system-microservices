@@ -9,6 +9,11 @@
 		reverse_proxy api-gateway:8090
 	}
 
+	# Keycloak (login pages, realms, admin console) under /auth
+	handle /auth/* {
+		reverse_proxy keycloak:8180
+	}
+
 	# everything else is the React app (single-page, nginx handles routing)
 	handle {
 		reverse_proxy frontend:80

@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -32,6 +33,7 @@ import java.util.UUID;
  * match every downstream service.
  */
 @Component
+@ConditionalOnProperty(name = "gateway.auth-mode", havingValue = "jwt", matchIfMissing = true)
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String SECRET_HEADER = "X-Internal-Secret";

@@ -57,9 +57,19 @@ spring:
           predicates:
             - Path=/api/notifications/**
 
-# MUST be identical to the secret in auth-service.
+# Edge auth mode: "jwt" = custom HS256 from auth-service (local default),
+# "keycloak" = validate Keycloak OIDC tokens via JWKS (cloud).
+gateway:
+  auth-mode: ${GATEWAY_AUTH_MODE:jwt}
+
+# MUST be identical to the secret in auth-service. (Used when auth-mode=jwt.)
 jwt:
   secret: ${JWT_SECRET:ChangeThisSecretToA64CharacterLongRandomStringForProductionUse12345}
+
+# Keycloak realm (only used when gateway.auth-mode=keycloak).
+keycloak:
+  issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/noor-bank}
+  jwks-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8180/realms/noor-bank/protocol/openid-connect/certs}
 
 # Stamped on every forwarded request so downstream services can verify the call
 # came through the gateway. MUST be identical to internal.shared-secret in every service.

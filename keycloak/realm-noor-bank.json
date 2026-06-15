@@ -1,0 +1,50 @@
+{
+  "realm": "noor-bank",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "CUSTOMER", "description": "Regular banking customer" },
+      { "name": "MANAGER", "description": "Bank staff manager" },
+      { "name": "ADMIN", "description": "Bank administrator" }
+    ]
+  },
+  "defaultRoles": ["CUSTOMER"],
+  "clients": [
+    {
+      "clientId": "noor-bank-frontend",
+      "name": "NOOR Bank Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:4173/*",
+        "https://*/*"
+      ],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@bank.local",
+      "email": "admin@bank.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Bank",
+      "lastName": "Admin",
+      "credentials": [
+        { "type": "password", "value": "Admin@12345", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN", "CUSTOMER"]
+    }
+  ]
+}

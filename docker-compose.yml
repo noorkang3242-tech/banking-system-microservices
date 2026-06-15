@@ -111,6 +111,27 @@ services:
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?set INTERNAL_SHARED_SECRET in .env}
       FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost:*}
+      # cloud uses Keycloak for auth; the token's issuer (browser-facing) must match
+      GATEWAY_AUTH_MODE: keycloak
+      KEYCLOAK_ISSUER_URI: ${PUBLIC_URL:-http://localhost}/auth/realms/noor-bank
+      KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/noor-bank/protocol/openid-connect/certs
+
+  # Identity provider. Imports the noor-bank realm on first start and serves
+  # under /auth (Caddy proxies /auth/* here). Behind Caddy for HTTPS.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm", "--http-port=8180"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-Admin@12345}
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: ${PUBLIC_URL:-http://localhost}/auth
+    volumes:
+      - ./keycloak/realm-noor-bank.json:/opt/keycloak/data/import/realm-noor-bank.json:ro
+      - keycloak_data:/opt/keycloak/data/h2
+    networks: [bank]
 
   # React app served by nginx (built from the ./frontend folder in this repo)
   frontend:
@@ -145,3 +166,4 @@ volumes:
   mysql_data:
   caddy_data:
   caddy_config:
+  keycloak_data:
