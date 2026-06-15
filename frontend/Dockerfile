@@ -1,9 +1,17 @@
 # Build the React app, then serve the static files with nginx.
 FROM node:20-alpine AS build
 WORKDIR /app
-# the public API base URL is baked in at build time
+# Vite bakes these in at build time. Cloud sets auth mode to keycloak.
 ARG VITE_API_BASE_URL=
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_AUTH_MODE=jwt
+ARG VITE_KEYCLOAK_URL=
+ARG VITE_KEYCLOAK_REALM=noor-bank
+ARG VITE_KEYCLOAK_CLIENT_ID=noor-bank-frontend
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_AUTH_MODE=$VITE_AUTH_MODE \
+    VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
+    VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM \
+    VITE_KEYCLOAK_CLIENT_ID=$VITE_KEYCLOAK_CLIENT_ID
 COPY package*.json ./
 RUN npm ci
 COPY . .

@@ -8,7 +8,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher'
 import { useLang } from '../i18n/LanguageContext'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, register, mode } = useAuth()
   const { t } = useLang()
   const navigate = useNavigate()
   const { message } = AntApp.useApp()
@@ -36,16 +36,28 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: 6 }}><Logo height={48} /></div>
         <p style={{ textAlign: 'center', color: '#888', marginTop: 0, marginBottom: 14 }}>{t('login.subtitle')}</p>
         <div style={{ marginBottom: 18 }}><LanguageSwitcher size="small" /></div>
-        <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
-          <Form.Item name="email" label={t('common.email')} rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}>
-            <Input size="large" placeholder="you@example.com" autoComplete="email" />
-          </Form.Item>
-          <Form.Item name="password" label={t('common.password')} rules={[{ required: true, message: 'Enter your password' }]}>
-            <Input.Password size="large" placeholder="••••••••" autoComplete="current-password" />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" size="large" block loading={loading}>{t('common.signIn')}</Button>
-        </Form>
-        <p style={{ textAlign: 'center', marginTop: 16 }}>{t('login.noAccount')} <Link to="/register">{t('login.createOne')}</Link></p>
+        {mode === 'keycloak' ? (
+          <>
+            <Button type="primary" size="large" block onClick={() => login()}>{t('common.signIn')}</Button>
+            <p style={{ textAlign: 'center', marginTop: 16 }}>
+              {t('login.noAccount')}{' '}
+              <a onClick={() => register()} style={{ cursor: 'pointer', color: '#fb8c00', fontWeight: 600 }}>{t('login.createOne')}</a>
+            </p>
+          </>
+        ) : (
+          <>
+            <Form layout="vertical" onFinish={onFinish} requiredMark={false}>
+              <Form.Item name="email" label={t('common.email')} rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}>
+                <Input size="large" placeholder="you@example.com" autoComplete="email" />
+              </Form.Item>
+              <Form.Item name="password" label={t('common.password')} rules={[{ required: true, message: 'Enter your password' }]}>
+                <Input.Password size="large" placeholder="••••••••" autoComplete="current-password" />
+              </Form.Item>
+              <Button type="primary" htmlType="submit" size="large" block loading={loading}>{t('common.signIn')}</Button>
+            </Form>
+            <p style={{ textAlign: 'center', marginTop: 16 }}>{t('login.noAccount')} <Link to="/register">{t('login.createOne')}</Link></p>
+          </>
+        )}
         <div style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: '#888' }}>
           {t('login.needHelp')} <a href="mailto:noorkang3242@gmail.com">Email</a> &nbsp;·&nbsp;
           <a href="https://wa.me/923233522940" target="_blank" rel="noreferrer" style={{ color: '#25D366', fontWeight: 600 }}>WhatsApp 0323-3522940</a>

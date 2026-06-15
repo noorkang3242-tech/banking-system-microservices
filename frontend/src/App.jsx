@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Spin } from 'antd'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
 import WeatherBackground from './components/WeatherBackground'
+import { useAuth } from './auth/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -14,6 +16,11 @@ import Notifications from './pages/Notifications'
 import Admin from './pages/Admin'
 
 export default function App() {
+  // in keycloak mode, wait for the OIDC session check before routing
+  const { ready } = useAuth()
+  if (!ready) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spin size="large" /></div>
+  }
   return (
     <>
     <WeatherBackground />
